@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>SMC Crypto Trading OS (v1)</title>
+  <title>SMC Crypto Trading OS (v1.1)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     :root {
@@ -218,11 +218,24 @@
     .journal-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
       margin-bottom: 8px;
       position: relative;
       z-index: 1;
+    }
+
+    .stats {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 0.78rem;
+      text-align: right;
+      color: var(--text-muted);
+    }
+
+    .stats span {
+      display: block;
     }
 
     table {
@@ -299,8 +312,8 @@
       </div>
 
       <div class="flow">
-        <strong>Flow:</strong> Context → HTF Bias → Zone → Entry → Risk → Save trade  
-        This version is crypto-only (BTC/ETH/alts), later we can plug Forex/Stocks.
+        <strong>Flow:</strong> Context → HTF Bias → Zone → Entry → Risk → Save trade.  
+        This version is crypto-only (BTC/ETH/alts); later we plug in Forex/Stocks.
       </div>
 
       <div class="summary" id="summary-panel">
@@ -313,6 +326,7 @@
         <div class="summary-item" id="summary-entry">Entry Type: –</div>
         <div class="summary-item" id="summary-sl">SL Method: –</div>
         <div class="summary-item" id="summary-tp">TP Method: –</div>
+        <div class="summary-item" id="summary-score">Setup Score: –</div>
       </div>
 
       <div class="options" id="save-container" style="margin-top: 10px;"></div>
@@ -325,7 +339,11 @@
           <div class="card-title">Journal (Local)</div>
           <div class="card-subtitle">Saved on this device using localStorage.</div>
         </div>
-        <button class="btn btn-outline" id="clear-btn" type="button">Clear All</button>
+        <div class="stats">
+          <span id="stats-total">Trades: 0</span>
+          <span id="stats-winrate">Winrate: –</span>
+          <span id="stats-avgR">Avg R: –</span>
+        </div>
       </div>
 
       <table>
@@ -336,6 +354,7 @@
             <th>Bias</th>
             <th>Zone</th>
             <th>Entry</th>
+            <th>Score</th>
             <th>Result</th>
             <th>R</th>
             <th>Actions</th>
@@ -344,14 +363,15 @@
         <tbody id="journal-body"></tbody>
       </table>
       <div class="empty-state" id="journal-empty">No trades yet. Finish a wizard run and save.</div>
+
+      <div style="margin-top: 8px; text-align: right; position: relative; z-index:1;">
+        <button class="btn btn-outline" id="clear-btn" type="button">Clear All</button>
+      </div>
     </div>
   </div>
 
   <script>
-    // ========== WIZARD LOGIC (CRYPTO ONLY v1) ==========
-
-    // Each node can optionally set a field on the currentTrade object via node.field
-    // Each option can specify: label, value, next, branchLabel
+    // ========== WIZARD LOGIC (CRYPTO ONLY v1.1) ==========
 
     var nodes = {
       start: {
@@ -590,7 +610,7 @@
         id: "saveStep",
         type: "end",
         text: "If you’re satisfied with this plan, click “Save Trade to Journal”.",
-        note: "Later we’ll add scoring and analytics. For now, you’re just building data.",
+        note: "Later we’ll add deeper analytics and cloud sync. For now, you’re building data.",
         options: [
           { label: "Back to previous step", next: "endReady", branchLabel: "Back before save" }
         ]
@@ -622,11 +642,17 @@
     var summaryEntryEl = document.getElementById("summary-entry");
     var summarySlEl = document.getElementById("summary-sl");
     var summaryTpEl = document.getElementById("summary-tp");
+    var summaryScoreEl = document.getElementById("summary-score");
 
     // journal elements
     var journalBodyEl = document.getElementById("journal-body");
     var journalEmptyEl = document.getElementById("journal-empty");
     var clearBtnEl = document.getElementById("clear-btn");
+
+    // stats elements
+    var statsTotalEl = document.getElementById("stats-total");
+    var statsWinrateEl = document.getElementById("stats-winrate");
+    var statsAvgREl = document.getElementById("stats-avgR");
 
     function humanReadableType(type) {
       if (type === "context") return "Phase 0: Context";
@@ -663,6 +689,9 @@
       summaryEntryEl.textContent = "Entry Type: " + (currentTrade.entryType || "–");
       summarySlEl.textContent = "SL Method: " + (currentTrade.slMethod || "–");
       summaryTpEl.textContent = "TP Method: " + (currentTrade.tpMethod || "–");
+      summaryScoreEl.textContent = "Setup Score: " + (
+        currentTrade.setupScore != null ? currentTrade.setupScore + "/10" : "–"
+      );
     }
 
     function renderCurrentNode() {
@@ -675,7 +704,6 @@
       updateBiasLabel();
       updateSummary();
 
-      // status line
       if (node.type === "context") {
         statusLineTextEl.textContent = "Context: define pair and session first.";
       } else if (node.type === "htf") {
@@ -692,7 +720,6 @@
         statusLineTextEl.textContent = "Info step. Read it fully.";
       }
 
-      // render options
       optionsContainerEl.innerHTML = "";
       var i, opt, btn;
       for (i = 0; i < node.options.length; i++) {
@@ -707,7 +734,6 @@
         })(i);
       }
 
-      // Save button only when at saveStep
       saveContainerEl.innerHTML = "";
       if (node.id === "saveStep") {
         var saveBtn = document.createElement("button");
@@ -723,24 +749,19 @@
     }
 
     function handleOptionClick(node, option) {
-      // Save path step
       path.push({
         nodeId: node.id,
         text: node.text,
         branchLabel: option.branchLabel || option.label
       });
 
-      // If node sets a field, store it
       if (node.field) {
         currentTrade[node.field] = option.value || option.label;
       }
-
-      // special: update bias if field is htfBias
       if (node.field === "htfBias") {
         currentTrade.htfBias = option.value;
       }
 
-      // move to next node
       currentNodeId = option.next;
       renderCurrentNode();
     }
@@ -748,8 +769,7 @@
     function goBack() {
       if (path.length === 0) return;
 
-      path.pop(); // remove last
-      // reset trade and recompute from start
+      path.pop();
       currentTrade = {};
       currentNodeId = "start";
 
@@ -758,7 +778,6 @@
         var node = nodes[currentNodeId];
         if (!node) break;
 
-        // find option that matches this branchLabel
         var chosenOption = null;
         for (var j = 0; j < node.options.length; j++) {
           var opt = node.options[j];
@@ -769,7 +788,6 @@
         }
         if (!chosenOption) break;
 
-        // apply field if any
         if (node.field) {
           currentTrade[node.field] = chosenOption.value || chosenOption.label;
         }
@@ -795,6 +813,40 @@
     backBtnEl.onclick = goBack;
     restartBtnEl.onclick = restartWizard;
 
+    // ========== SCORING ==========
+
+    function calculateSetupScore(trade) {
+      var score = 0;
+
+      // HTF sweep
+      if (trade.htfSweep === "yes") score += 2;
+
+      // Displacement
+      if (trade.displacementType === "impulse") score += 2;
+      else if (trade.displacementType === "staircase") score += 1;
+
+      // Area + bias
+      if (trade.htfBias === "bullish" && trade.htfArea === "discount") score += 2;
+      if (trade.htfBias === "bearish" && trade.htfArea === "premium") score += 2;
+
+      // Zone type
+      if (trade.zoneType === "reversal" || trade.zoneType === "continuation") score += 1;
+
+      // Entry type
+      if (trade.entryType === "confirmation") score += 2;
+      else if (trade.entryType === "limit") score += 1;
+
+      // SL method
+      if (trade.slMethod === "beyond_sweep") score += 1;
+
+      // TP method
+      if (trade.tpMethod === "fvg_liquidity" || trade.tpMethod === "single_liquidity") score += 1;
+
+      if (score < 0) score = 0;
+      if (score > 10) score = 10;
+      return score;
+    }
+
     // ========== JOURNAL (localStorage) ==========
 
     function loadTrades() {
@@ -816,9 +868,53 @@
       }
     }
 
+    function updateStats(trades) {
+      var total = trades.length;
+      statsTotalEl.textContent = "Trades: " + total;
+
+      if (!total) {
+        statsWinrateEl.textContent = "Winrate: –";
+        statsAvgREl.textContent = "Avg R: –";
+        return;
+      }
+
+      var wins = 0;
+      var losses = 0;
+      var sumR = 0;
+      var rCount = 0;
+
+      for (var i = 0; i < trades.length; i++) {
+        var t = trades[i];
+        if (t.result === "win") wins++;
+        else if (t.result === "loss") losses++;
+
+        if (t.rrAchieved != null && !isNaN(t.rrAchieved)) {
+          sumR += Number(t.rrAchieved);
+          rCount++;
+        }
+      }
+
+      var denom = wins + losses;
+      if (denom === 0) {
+        statsWinrateEl.textContent = "Winrate: –";
+      } else {
+        var wr = (wins / denom) * 100;
+        statsWinrateEl.textContent = "Winrate: " + wr.toFixed(1) + "%";
+      }
+
+      if (rCount === 0) {
+        statsAvgREl.textContent = "Avg R: –";
+      } else {
+        var avgR = sumR / rCount;
+        statsAvgREl.textContent = "Avg R: " + avgR.toFixed(2);
+      }
+    }
+
     function renderJournal() {
       var trades = loadTrades();
       journalBodyEl.innerHTML = "";
+
+      updateStats(trades);
 
       if (!trades.length) {
         journalEmptyEl.style.display = "block";
@@ -850,6 +946,10 @@
           var entryTd = document.createElement("td");
           entryTd.textContent = t.entryType || "-";
           tr.appendChild(entryTd);
+
+          var scoreTd = document.createElement("td");
+          scoreTd.textContent = t.setupScore != null ? t.setupScore + "/10" : "-";
+          tr.appendChild(scoreTd);
 
           var resultTd = document.createElement("td");
           var pill = document.createElement("span");
@@ -893,15 +993,15 @@
       var trade = JSON.parse(JSON.stringify(currentTrade));
       trade.marketType = "crypto";
       trade.createdAt = new Date().toISOString();
-      // initial result fields
       trade.result = null;
       trade.rrAchieved = null;
+      trade.setupScore = calculateSetupScore(trade);
 
       var allTrades = loadTrades();
       allTrades.push(trade);
       saveTrades(allTrades);
       renderJournal();
-      alert("Trade saved to local journal.");
+      alert("Trade saved to local journal with score " + trade.setupScore + "/10.");
       restartWizard();
     }
 
