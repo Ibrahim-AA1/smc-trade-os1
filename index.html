@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>SMC Crypto Trading OS (Cloud v1)</title>
+  <title>SMC Crypto Trading OS (Cloud v1 + Phase 3A)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     :root {
@@ -213,6 +213,80 @@
       margin-bottom: 2px;
     }
 
+    /* Meta panel (entry TF, tag, notes) */
+    .meta {
+      position: relative;
+      z-index: 1;
+      margin-top: 10px;
+      padding: 8px 10px 6px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      font-size: 0.78rem;
+    }
+
+    .meta-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+
+    .meta-label {
+      color: var(--text-muted);
+      min-width: 70px;
+    }
+
+    .meta-chip-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .meta-tf-btn {
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      border: 1px solid rgba(148,163,184,0.5);
+      background: rgba(15,23,42,0.95);
+      color: #e5e7eb;
+      cursor: pointer;
+      transition: all 0.14s;
+    }
+    .meta-tf-btn.active {
+      background: radial-gradient(circle at top left, #4f46e5, #4338ca);
+      border-color: rgba(129,140,248,0.9);
+    }
+
+    .meta-select {
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      background: rgba(15,23,42,0.95);
+      color: #e5e7eb;
+      font-size: 0.78rem;
+    }
+
+    .meta-notes-input {
+      flex: 1;
+      min-width: 140px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      background: rgba(15,23,42,0.95);
+      color: #e5e7eb;
+      font-size: 0.78rem;
+    }
+
     /* Auth bar */
 
     .auth-bar {
@@ -264,6 +338,25 @@
 
     .stats span {
       display: block;
+    }
+
+    .filter-bar {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+      font-size: 0.78rem;
+    }
+
+    .filter-select {
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      background: rgba(15,23,42,0.95);
+      color: #e5e7eb;
+      font-size: 0.78rem;
     }
 
     table {
@@ -354,7 +447,41 @@
         <div class="summary-item" id="summary-entry">Entry Type: –</div>
         <div class="summary-item" id="summary-sl">SL Method: –</div>
         <div class="summary-item" id="summary-tp">TP Method: –</div>
+        <div class="summary-item" id="summary-tf">Entry TF: –</div>
+        <div class="summary-item" id="summary-tag">Tag: –</div>
         <div class="summary-item" id="summary-score">Setup Score: –</div>
+      </div>
+
+      <!-- Meta panel -->
+      <div class="meta" id="meta-panel">
+        <div class="meta-title">Meta (used for stats & filtering)</div>
+
+        <div class="meta-row">
+          <span class="meta-label">Entry TF:</span>
+          <div class="meta-chip-group">
+            <button type="button" class="meta-tf-btn" data-tf="1m">1m</button>
+            <button type="button" class="meta-tf-btn" data-tf="3m">3m</button>
+            <button type="button" class="meta-tf-btn" data-tf="5m">5m</button>
+            <button type="button" class="meta-tf-btn" data-tf="15m">15m</button>
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <span class="meta-label">Setup tag:</span>
+          <select id="meta-tag-select" class="meta-select">
+            <option value="">–</option>
+            <option value="HTF reversal">HTF reversal</option>
+            <option value="HTF continuation">HTF continuation</option>
+            <option value="LTF continuation">LTF continuation</option>
+            <option value="News fade">News fade</option>
+            <option value="Liquidity grab scalp">Liquidity grab scalp</option>
+          </select>
+        </div>
+
+        <div class="meta-row">
+          <span class="meta-label">Notes:</span>
+          <input id="meta-notes" class="meta-notes-input" type="text" placeholder="Optional notes (missed first touch, late entry, etc.)" />
+        </div>
       </div>
 
       <div class="options" id="save-container" style="margin-top: 10px;"></div>
@@ -384,14 +511,46 @@
         </div>
       </div>
 
+      <!-- Filters -->
+      <div class="filter-bar">
+        <select id="filter-session" class="filter-select">
+          <option value="">Session: All</option>
+          <option value="London">London</option>
+          <option value="New York">New York</option>
+          <option value="Asia">Asia</option>
+          <option value="Off-hours">Off-hours</option>
+        </select>
+
+        <select id="filter-zone" class="filter-select">
+          <option value="">Zone: All</option>
+          <option value="reversal">Reversal</option>
+          <option value="continuation">Continuation</option>
+        </select>
+
+        <select id="filter-entry" class="filter-select">
+          <option value="">Entry: All</option>
+          <option value="confirmation">Confirmation</option>
+          <option value="limit">Limit</option>
+        </select>
+
+        <select id="filter-result" class="filter-select">
+          <option value="">Result: All</option>
+          <option value="win">Win</option>
+          <option value="loss">Loss</option>
+          <option value="be">B/E</option>
+        </select>
+      </div>
+
       <table>
         <thead>
           <tr>
             <th>Date</th>
             <th>Pair</th>
+            <th>TF</th>
             <th>Bias</th>
             <th>Zone</th>
             <th>Entry</th>
+            <th>Tag</th>
             <th>Score</th>
             <th>Result</th>
             <th>R</th>
@@ -430,21 +589,24 @@
       updateDoc
     } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-    // 🔐 REPLACE THIS with your actual const firebaseConfig = {
-  apiKey: "AIzaSyAlKjwX_G0tJptXdysDpQ4UB-y2MPFuq04",
-  authDomain: "smc-trade-os.firebaseapp.com",
-  projectId: "smc-trade-os",
-  storageBucket: "smc-trade-os.firebasestorage.app",
-  messagingSenderId: "565962124502",
-  appId: "1:565962124502:web:891e9d125fd49f23052d77",
-  measurementId: "G-LGTW0D5ZKQ" // this extra field is fine, or you can delete it
-};
+    // 🔐 Your Firebase config (this is fine to be public for web apps)
+    const firebaseConfig = {
+      apiKey: "AIzaSyAlKjwX_G0tJptXdysDpQ4UB-y2MPFuq04",
+      authDomain: "smc-trade-os.firebaseapp.com",
+      projectId: "smc-trade-os",
+      storageBucket: "smc-trade-os.firebasestorage.app",
+      messagingSenderId: "565962124502",
+      appId: "1:565962124502:web:891e9d125fd49f23052d77",
+      measurementId: "G-LGTW0D5ZKQ"
+    };
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
     let currentUser = null;
-    let tradesCache = []; // used when logged in (Firestore)
+    let tradesCache = [];      // used when logged in (Firestore)
+    let lastLoadedTrades = []; // base array before filters
 
     // ===== DOM elements =====
     const authEmailEl = document.getElementById("auth-email");
@@ -472,6 +634,8 @@
     const summaryEntryEl = document.getElementById("summary-entry");
     const summarySlEl = document.getElementById("summary-sl");
     const summaryTpEl = document.getElementById("summary-tp");
+    const summaryTfEl = document.getElementById("summary-tf");
+    const summaryTagEl = document.getElementById("summary-tag");
     const summaryScoreEl = document.getElementById("summary-score");
 
     const journalBodyEl = document.getElementById("journal-body");
@@ -482,7 +646,18 @@
     const statsWinrateEl = document.getElementById("stats-winrate");
     const statsAvgREl = document.getElementById("stats-avgR");
 
-    // ===== Wizard nodes (same logic as before) =====
+    // Meta panel elements
+    const metaTfButtons = document.querySelectorAll(".meta-tf-btn");
+    const metaTagSelectEl = document.getElementById("meta-tag-select");
+    const metaNotesEl = document.getElementById("meta-notes");
+
+    // Filter elements
+    const filterSessionEl = document.getElementById("filter-session");
+    const filterZoneEl = document.getElementById("filter-zone");
+    const filterEntryEl = document.getElementById("filter-entry");
+    const filterResultEl = document.getElementById("filter-result");
+
+    // ===== Wizard nodes =====
     const nodes = {
       start: {
         id: "start",
@@ -767,9 +942,26 @@
       summaryEntryEl.textContent = "Entry Type: " + (currentTrade.entryType || "–");
       summarySlEl.textContent = "SL Method: " + (currentTrade.slMethod || "–");
       summaryTpEl.textContent = "TP Method: " + (currentTrade.tpMethod || "–");
+      summaryTfEl.textContent = "Entry TF: " + (currentTrade.entryTf || "–");
+      summaryTagEl.textContent = "Tag: " + (currentTrade.setupTag || "–");
       summaryScoreEl.textContent = "Setup Score: " + (
         currentTrade.setupScore != null ? currentTrade.setupScore + "/10" : "–"
       );
+    }
+
+    function syncMetaUIFromTrade() {
+      // TF buttons
+      metaTfButtons.forEach(btn => {
+        const tf = btn.getAttribute("data-tf");
+        if (currentTrade.entryTf === tf) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+
+      metaTagSelectEl.value = currentTrade.setupTag || "";
+      metaNotesEl.value = currentTrade.notes || "";
     }
 
     function renderCurrentNode() {
@@ -784,6 +976,7 @@
       nodeTypeLabelEl.textContent = humanReadableType(node.type);
       updateBiasLabel();
       updateSummary();
+      syncMetaUIFromTrade();
 
       if (node.type === "context") {
         statusLineTextEl.textContent = "Context: define pair and session first.";
@@ -888,6 +1081,25 @@
     backBtnEl.onclick = goBack;
     restartBtnEl.onclick = restartWizard;
 
+    // Meta events
+    metaTfButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const tf = btn.getAttribute("data-tf");
+        currentTrade.entryTf = tf;
+        syncMetaUIFromTrade();
+        updateSummary();
+      });
+    });
+
+    metaTagSelectEl.addEventListener("change", () => {
+      currentTrade.setupTag = metaTagSelectEl.value || null;
+      updateSummary();
+    });
+
+    metaNotesEl.addEventListener("input", () => {
+      currentTrade.notes = metaNotesEl.value || "";
+    });
+
     // ===== Scoring =====
     function calculateSetupScore(trade) {
       let score = 0;
@@ -966,7 +1178,7 @@
       await updateDoc(ref, partial);
     }
 
-    // ===== Stats & journal rendering =====
+    // ===== Filters + stats + journal rendering =====
     function updateStats(trades) {
       const total = trades.length;
       statsTotalEl.textContent = "Trades: " + total;
@@ -1008,14 +1220,22 @@
       }
     }
 
-    async function renderJournal() {
-      let trades;
-      if (currentUser) {
-        trades = await loadTradesFirestore();
-      } else {
-        trades = loadTradesLocal();
-      }
+    function applyFilters(trades) {
+      const s = filterSessionEl.value;
+      const z = filterZoneEl.value;
+      const e = filterEntryEl.value;
+      const r = filterResultEl.value;
 
+      return trades.filter(t => {
+        if (s && t.session !== s) return false;
+        if (z && t.zoneType !== z) return false;
+        if (e && t.entryType !== e) return false;
+        if (r && t.result !== r) return false;
+        return true;
+      });
+    }
+
+    function renderJournalTable(trades) {
       journalBodyEl.innerHTML = "";
       updateStats(trades);
 
@@ -1025,8 +1245,10 @@
       }
       journalEmptyEl.style.display = "none";
 
-      trades.forEach((t, index) => {
+      trades.forEach(t => {
         const tr = document.createElement("tr");
+
+        const idx = lastLoadedTrades.indexOf(t);
 
         const dateTd = document.createElement("td");
         dateTd.textContent = t.createdAt ? t.createdAt.split("T")[0] : "-";
@@ -1035,6 +1257,10 @@
         const pairTd = document.createElement("td");
         pairTd.textContent = t.pair || "-";
         tr.appendChild(pairTd);
+
+        const tfTd = document.createElement("td");
+        tfTd.textContent = t.entryTf || "-";
+        tr.appendChild(tfTd);
 
         const biasTd = document.createElement("td");
         biasTd.textContent = t.htfBias || "-";
@@ -1048,20 +1274,24 @@
         entryTd.textContent = t.entryType || "-";
         tr.appendChild(entryTd);
 
+        const tagTd = document.createElement("td");
+        tagTd.textContent = t.setupTag || "-";
+        tr.appendChild(tagTd);
+
         const scoreTd = document.createElement("td");
         scoreTd.textContent = t.setupScore != null ? t.setupScore + "/10" : "-";
         tr.appendChild(scoreTd);
 
         const resultTd = document.createElement("td");
         const pill = document.createElement("span");
-        const r = t.result || "";
-        if (r === "win") {
+        const res = t.result || "";
+        if (res === "win") {
           pill.className = "pill pill-win";
           pill.textContent = "WIN";
-        } else if (r === "loss") {
+        } else if (res === "loss") {
           pill.className = "pill pill-loss";
           pill.textContent = "LOSS";
-        } else if (r === "be") {
+        } else if (res === "be") {
           pill.className = "pill pill-be";
           pill.textContent = "B/E";
         } else {
@@ -1079,12 +1309,24 @@
         editBtn.type = "button";
         editBtn.className = "btn btn-ghost";
         editBtn.textContent = "Edit";
-        editBtn.onclick = () => editTrade(index);
+        editBtn.onclick = () => editTrade(idx);
         actionsTd.appendChild(editBtn);
         tr.appendChild(actionsTd);
 
         journalBodyEl.appendChild(tr);
       });
+    }
+
+    async function renderJournal() {
+      let trades;
+      if (currentUser) {
+        trades = await loadTradesFirestore();
+      } else {
+        trades = loadTradesLocal();
+      }
+      lastLoadedTrades = trades;
+      const filtered = applyFilters(trades);
+      renderJournalTable(filtered);
     }
 
     async function saveCurrentTrade() {
@@ -1158,9 +1400,17 @@
           renderJournal();
         }
       } else {
-        alert("Clear All is only for local mode. For Firestore, delete trades manually later (we can add a bulk delete button in another version).");
+        alert("Clear All is only for local mode. For Firestore, delete trades manually later (we can add bulk delete in a later version).");
       }
     };
+
+    // Filters events
+    [filterSessionEl, filterZoneEl, filterEntryEl, filterResultEl].forEach(sel => {
+      sel.addEventListener("change", () => {
+        const filtered = applyFilters(lastLoadedTrades);
+        renderJournalTable(filtered);
+      });
+    });
 
     // ===== Auth logic =====
     function updateAuthUI() {
@@ -1229,4 +1479,4 @@
     renderJournal();
   </script>
 </body>
-</html></html>
+</html></html></html>
