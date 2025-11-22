@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>SMC Crypto Trading OS (Cloud v1 + Phase 3A)</title>
+  <title>SMC Crypto Trading OS (Cloud v1 + Analytics)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     :root {
@@ -213,7 +213,6 @@
       margin-bottom: 2px;
     }
 
-    /* Meta panel (entry TF, tag, notes) */
     .meta {
       position: relative;
       z-index: 1;
@@ -287,8 +286,6 @@
       font-size: 0.78rem;
     }
 
-    /* Auth bar */
-
     .auth-bar {
       position: relative;
       z-index: 1;
@@ -314,8 +311,6 @@
       color: var(--text-muted);
       font-size: 0.75rem;
     }
-
-    /* Journal */
 
     .journal-header {
       display: flex;
@@ -402,7 +397,56 @@
       color: var(--text-muted);
       padding-top: 6px;
     }
+
+    .charts-grid {
+      position: relative;
+      z-index: 1;
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 10px;
+    }
+    @media (max-width: 1100px) {
+      .charts-grid {
+        grid-template-columns: minmax(0,1fr);
+      }
+    }
+
+    .chart-card {
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 10px;
+      border: 1px solid rgba(30, 64, 175, 0.7);
+      padding: 6px 8px 4px;
+    }
+
+    .chart-title {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .insights {
+      position: relative;
+      z-index: 1;
+      margin-top: 10px;
+      padding: 8px 10px 6px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px dashed rgba(148, 163, 184, 0.7);
+      font-size: 0.78rem;
+      line-height: 1.4;
+    }
+
+    .insights-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
   </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="app">
@@ -452,7 +496,6 @@
         <div class="summary-item" id="summary-score">Setup Score: –</div>
       </div>
 
-      <!-- Meta panel -->
       <div class="meta" id="meta-panel">
         <div class="meta-title">Meta (used for stats & filtering)</div>
 
@@ -487,9 +530,8 @@
       <div class="options" id="save-container" style="margin-top: 10px;"></div>
     </div>
 
-    <!-- RIGHT: AUTH + JOURNAL -->
+    <!-- RIGHT: AUTH + CONTEXT + JOURNAL + ANALYTICS -->
     <div class="card">
-      <!-- Auth bar -->
       <div class="auth-bar">
         <input class="auth-input" id="auth-email" type="email" placeholder="Email" />
         <input class="auth-input" id="auth-password" type="password" placeholder="Password" />
@@ -497,6 +539,86 @@
         <button class="btn btn-outline" id="register-btn" type="button">Register</button>
         <button class="btn btn-ghost" id="logout-btn" type="button">Logout</button>
         <span class="auth-status" id="auth-status">Not logged in (local mode)</span>
+      </div>
+
+      <!-- Daily Market Context -->
+      <div class="meta" id="daily-context-panel">
+        <div class="meta-title">Daily Market Context</div>
+
+        <div class="meta-row">
+          <span class="meta-label">BTC HTF:</span>
+          <div class="meta-chip-group">
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="btcHTFTrend" data-dc-value="bullish">Bullish</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="btcHTFTrend" data-dc-value="bearish">Bearish</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="btcHTFTrend" data-dc-value="range">Range</button>
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <span class="meta-label">BTC intraday:</span>
+          <div class="meta-chip-group">
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="btcLTFState" data-dc-value="pumping">Pumping</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="btcLTFState" data-dc-value="dumping">Dumping</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="btcLTFState" data-dc-value="grindy">Grindy</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="btcLTFState" data-dc-value="choppy">Choppy</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="btcLTFState" data-dc-value="flat">Flat</button>
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <span class="meta-label">Regime:</span>
+          <div class="meta-chip-group">
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="regime" data-dc-value="macro bull">Macro bull</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="regime" data-dc-value="macro bear">Macro bear</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="regime" data-dc-value="sideways">Sideways</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="regime" data-dc-value="accumulation">Accumulation</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="regime" data-dc-value="distribution">Distribution</button>
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <span class="meta-label">Fear/Greed:</span>
+          <div class="meta-chip-group">
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="fearGreedBucket" data-dc-value="extreme fear">Ext fear</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="fearGreedBucket" data-dc-value="fear">Fear</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="fearGreedBucket" data-dc-value="neutral">Neutral</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="fearGreedBucket" data-dc-value="greed">Greed</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="fearGreedBucket" data-dc-value="extreme greed">Ext greed</button>
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <span class="meta-label">Volatility:</span>
+          <div class="meta-chip-group">
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="volatility" data-dc-value="low">Low</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="volatility" data-dc-value="normal">Normal</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="volatility" data-dc-value="high">High</button>
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <span class="meta-label">Dominance:</span>
+          <div class="meta-chip-group">
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="btcDominanceTrend" data-dc-value="up">Up</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="btcDominanceTrend" data-dc-value="down">Down</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="btcDominanceTrend" data-dc-value="flat">Flat</button>
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <span class="meta-label">News:</span>
+          <div class="meta-chip-group">
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="newsImpact" data-dc-value="none">None</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="newsImpact" data-dc-value="scheduled">Scheduled</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="newsImpact" data-dc-value="unexpected">Unexpected</button>
+            <button type="button" class="meta-tf-btn dc-btn" data-dc-field="newsImpact" data-dc-value="post-event">Post-event</button>
+          </div>
+        </div>
+
+        <div class="meta-row">
+          <button class="btn btn-outline" id="dc-save-btn" type="button">Save Today&#39;s Context</button>
+          <span class="auth-status" id="dc-status">No context set for today.</span>
+        </div>
       </div>
 
       <div class="journal-header">
@@ -511,7 +633,6 @@
         </div>
       </div>
 
-      <!-- Filters -->
       <div class="filter-bar">
         <select id="filter-session" class="filter-select">
           <option value="">Session: All</option>
@@ -561,6 +682,26 @@
       </table>
       <div class="empty-state" id="journal-empty">No trades yet. Finish a wizard run and save.</div>
 
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">Winrate by Session</div>
+          <canvas id="sessionChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Winrate by Score Bucket</div>
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">R-multiple Distribution</div>
+          <canvas id="rDistChart"></canvas>
+        </div>
+      </div>
+
+      <div class="insights" id="insights-panel">
+        <div class="insights-title">Pattern Insights</div>
+        <div id="insights-content">Not enough data yet. Log more trades.</div>
+      </div>
+
       <div style="margin-top: 8px; text-align: right; position: relative; z-index:1;">
         <button class="btn btn-outline" id="clear-btn" type="button">Clear All (local only)</button>
       </div>
@@ -568,7 +709,6 @@
   </div>
 
   <script type="module">
-    // ===== Firebase Imports =====
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
     import {
       getAuth,
@@ -589,9 +729,8 @@
       updateDoc
     } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-    // 🔐 Your Firebase config (this is fine to be public for web apps)
     const firebaseConfig = {
-      apiKey: "AIzaSyAlKjwX_G0tJptXdysDpQ4UB-y2MPFuq04",
+      apiKey: "YOUR_REDACTED_KEY_HERE",
       authDomain: "smc-trade-os.firebaseapp.com",
       projectId: "smc-trade-os",
       storageBucket: "smc-trade-os.firebasestorage.app",
@@ -605,10 +744,13 @@
     const db = getFirestore(app);
 
     let currentUser = null;
-    let tradesCache = [];      // used when logged in (Firestore)
-    let lastLoadedTrades = []; // base array before filters
+    let tradesCache = [];
+    let lastLoadedTrades = [];
 
-    // ===== DOM elements =====
+    let sessionChart = null;
+    let scoreChart = null;
+    let rDistChart = null;
+
     const authEmailEl = document.getElementById("auth-email");
     const authPasswordEl = document.getElementById("auth-password");
     const loginBtnEl = document.getElementById("login-btn");
@@ -646,16 +788,151 @@
     const statsWinrateEl = document.getElementById("stats-winrate");
     const statsAvgREl = document.getElementById("stats-avgR");
 
-    // Meta panel elements
     const metaTfButtons = document.querySelectorAll(".meta-tf-btn");
     const metaTagSelectEl = document.getElementById("meta-tag-select");
     const metaNotesEl = document.getElementById("meta-notes");
 
-    // Filter elements
     const filterSessionEl = document.getElementById("filter-session");
     const filterZoneEl = document.getElementById("filter-zone");
     const filterEntryEl = document.getElementById("filter-entry");
     const filterResultEl = document.getElementById("filter-result");
+
+    const sessionChartCtx = document.getElementById("sessionChart").getContext("2d");
+    const scoreChartCtx = document.getElementById("scoreChart").getContext("2d");
+    const rDistChartCtx = document.getElementById("rDistChart").getContext("2d");
+
+    const insightsContentEl = document.getElementById("insights-content");
+
+    // ===== Daily Market Context (per-day regime) =====
+    const dcStatusEl = document.getElementById("dc-status");
+    const dcSaveBtn = document.getElementById("dc-save-btn");
+    const dcButtons = document.querySelectorAll(".dc-btn");
+
+    let currentDailyContext = null;
+    let dailyContextMap = {}; // { "YYYY-MM-DD": { ... } }
+
+    function getTodayKey() {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function loadDailyContextLocal() {
+      try {
+        const raw = localStorage.getItem("dailyContext");
+        if (!raw) {
+          dailyContextMap = {};
+          return;
+        }
+        dailyContextMap = JSON.parse(raw) || {};
+      } catch {
+        dailyContextMap = {};
+      }
+    }
+
+    function saveDailyContextLocal() {
+      try {
+        localStorage.setItem("dailyContext", JSON.stringify(dailyContextMap));
+      } catch {}
+    }
+
+    function ensureTodayContext() {
+      const todayKey = getTodayKey();
+      let ctx = dailyContextMap[todayKey];
+      if (!ctx) {
+        ctx = {
+          date: todayKey,
+          btcHTFTrend: null,
+          btcLTFState: null,
+          regime: null,
+          fearGreedBucket: null,
+          volatility: null,
+          btcDominanceTrend: null,
+          newsImpact: null
+        };
+        dailyContextMap[todayKey] = ctx;
+      }
+      currentDailyContext = ctx;
+    }
+
+    function updateDailyContextUI() {
+      const todayKey = getTodayKey();
+      if (!currentDailyContext || currentDailyContext.date !== todayKey) {
+        dcStatusEl.textContent = "No context set for today.";
+      } else {
+        const ctx = currentDailyContext;
+        const parts = [];
+        if (ctx.regime) parts.push(ctx.regime);
+        if (ctx.btcHTFTrend) parts.push("HTF " + ctx.btcHTFTrend);
+        if (ctx.btcLTFState) parts.push("LTF " + ctx.btcLTFState);
+        if (ctx.fearGreedBucket) parts.push("FG: " + ctx.fearGreedBucket);
+        if (ctx.volatility) parts.push("Vol: " + ctx.volatility);
+        if (ctx.btcDominanceTrend) parts.push("Dom: " + ctx.btcDominanceTrend);
+        if (ctx.newsImpact) parts.push("News: " + ctx.newsImpact);
+        dcStatusEl.textContent = parts.length ? parts.join(" | ") : "Context blank for today.";
+      }
+
+      dcButtons.forEach(btn => {
+        const field = btn.getAttribute("data-dc-field");
+        const val = btn.getAttribute("data-dc-value");
+        if (
+          currentDailyContext &&
+          currentDailyContext.date === getTodayKey() &&
+          currentDailyContext[field] === val
+        ) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+    }
+
+    dcButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const todayKey = getTodayKey();
+        if (!currentDailyContext || currentDailyContext.date !== todayKey) {
+          ensureTodayContext();
+        }
+        const field = btn.getAttribute("data-dc-field");
+        const val = btn.getAttribute("data-dc-value");
+
+        if (currentDailyContext[field] === val) {
+          currentDailyContext[field] = null;
+        } else {
+          currentDailyContext[field] = val;
+        }
+
+        dailyContextMap[todayKey] = currentDailyContext;
+        saveDailyContextLocal();
+        updateDailyContextUI();
+      });
+    });
+
+    dcSaveBtn.addEventListener("click", () => {
+      const todayKey = getTodayKey();
+      if (!currentDailyContext || currentDailyContext.date !== todayKey) {
+        ensureTodayContext();
+      }
+      dailyContextMap[todayKey] = currentDailyContext;
+      saveDailyContextLocal();
+      updateDailyContextUI();
+      alert("Saved today's market context (" + todayKey + ").");
+    });
+
+    function hasAnyDailyContext(ctx) {
+      if (!ctx) return false;
+      return !!(
+        ctx.btcHTFTrend ||
+        ctx.btcLTFState ||
+        ctx.regime ||
+        ctx.fearGreedBucket ||
+        ctx.volatility ||
+        ctx.btcDominanceTrend ||
+        ctx.newsImpact
+      );
+    }
 
     // ===== Wizard nodes =====
     const nodes = {
@@ -902,7 +1179,6 @@
       }
     };
 
-    // ===== Wizard state =====
     let currentNodeId = "start";
     let path = [];
     let currentTrade = { marketType: "crypto" };
@@ -950,7 +1226,6 @@
     }
 
     function syncMetaUIFromTrade() {
-      // TF buttons
       metaTfButtons.forEach(btn => {
         const tf = btn.getAttribute("data-tf");
         if (currentTrade.entryTf === tf) {
@@ -1081,7 +1356,6 @@
     backBtnEl.onclick = goBack;
     restartBtnEl.onclick = restartWizard;
 
-    // Meta events
     metaTfButtons.forEach(btn => {
       btn.addEventListener("click", () => {
         const tf = btn.getAttribute("data-tf");
@@ -1100,33 +1374,23 @@
       currentTrade.notes = metaNotesEl.value || "";
     });
 
-    // ===== Scoring =====
     function calculateSetupScore(trade) {
       let score = 0;
-
       if (trade.htfSweep === "yes") score += 2;
-
       if (trade.displacementType === "impulse") score += 2;
       else if (trade.displacementType === "staircase") score += 1;
-
       if (trade.htfBias === "bullish" && trade.htfArea === "discount") score += 2;
       if (trade.htfBias === "bearish" && trade.htfArea === "premium") score += 2;
-
       if (trade.zoneType === "reversal" || trade.zoneType === "continuation") score += 1;
-
       if (trade.entryType === "confirmation") score += 2;
       else if (trade.entryType === "limit") score += 1;
-
       if (trade.slMethod === "beyond_sweep") score += 1;
-
       if (trade.tpMethod === "fvg_liquidity" || trade.tpMethod === "single_liquidity") score += 1;
-
       if (score < 0) score = 0;
       if (score > 10) score = 10;
       return score;
     }
 
-    // ===== Local storage helpers =====
     function loadTradesLocal() {
       try {
         const raw = localStorage.getItem("trades");
@@ -1147,7 +1411,6 @@
       localStorage.removeItem("trades");
     }
 
-    // ===== Firestore helpers =====
     async function loadTradesFirestore() {
       if (!currentUser) return [];
       const q = query(
@@ -1178,7 +1441,6 @@
       await updateDoc(ref, partial);
     }
 
-    // ===== Filters + stats + journal rendering =====
     function updateStats(trades) {
       const total = trades.length;
       statsTotalEl.textContent = "Trades: " + total;
@@ -1197,7 +1459,6 @@
       for (const t of trades) {
         if (t.result === "win") wins++;
         else if (t.result === "loss") losses++;
-
         if (t.rrAchieved != null && !isNaN(t.rrAchieved)) {
           sumR += Number(t.rrAchieved);
           rCount++;
@@ -1247,7 +1508,6 @@
 
       trades.forEach(t => {
         const tr = document.createElement("tr");
-
         const idx = lastLoadedTrades.indexOf(t);
 
         const dateTd = document.createElement("td");
@@ -1317,6 +1577,234 @@
       });
     }
 
+    function updateChartsAndInsights(trades) {
+      const sessions = ["London", "New York", "Asia", "Off-hours"];
+      const sessionWinrates = [];
+      const sessionCounts = [];
+
+      sessions.forEach(s => {
+        const subset = trades.filter(t => t.session === s);
+        const total = subset.length;
+        sessionCounts.push(total);
+        if (!total) {
+          sessionWinrates.push(0);
+        } else {
+          let wins = 0;
+          let losses = 0;
+          subset.forEach(t => {
+            if (t.result === "win") wins++;
+            else if (t.result === "loss") losses++;
+          });
+          const denom = wins + losses;
+          const wr = denom ? (wins / denom) * 100 : 0;
+          sessionWinrates.push(wr);
+        }
+      });
+
+      const sessionData = {
+        labels: sessions,
+        datasets: [{ label: "Winrate %", data: sessionWinrates }]
+      };
+
+      if (!sessionChart) {
+        sessionChart = new Chart(sessionChartCtx, {
+          type: "bar",
+          data: sessionData,
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: ctx => `${ctx.parsed.y.toFixed(1)}% (n=${sessionCounts[ctx.dataIndex]})`
+                }
+              }
+            },
+            scales: { y: { beginAtZero: true, max: 100 } }
+          }
+        });
+      } else {
+        sessionChart.data = sessionData;
+        sessionChart.update();
+      }
+
+      const buckets = ["0–4", "5–7", "8–10"];
+      const bucketRanges = [
+        { min: 0, max: 4 },
+        { min: 5, max: 7 },
+        { min: 8, max: 10 }
+      ];
+
+      const bucketWinrate = [];
+      const bucketCounts = [];
+
+      bucketRanges.forEach(rng => {
+        const subset = trades.filter(t => {
+          if (t.setupScore == null) return false;
+          const s = Number(t.setupScore);
+          return s >= rng.min && s <= rng.max;
+        });
+        const total = subset.length;
+        bucketCounts.push(total);
+        if (!total) {
+          bucketWinrate.push(0);
+        } else {
+          let wins = 0;
+          let losses = 0;
+          subset.forEach(t => {
+            if (t.result === "win") wins++;
+            else if (t.result === "loss") losses++;
+          });
+          const denom = wins + losses;
+          const wr = denom ? (wins / denom) * 100 : 0;
+          bucketWinrate.push(wr);
+        }
+      });
+
+      const scoreData = {
+        labels: buckets,
+        datasets: [{ label: "Winrate %", data: bucketWinrate }]
+      };
+
+      if (!scoreChart) {
+        scoreChart = new Chart(scoreChartCtx, {
+          type: "bar",
+          data: scoreData,
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: ctx => `${ctx.parsed.y.toFixed(1)}% (n=${bucketCounts[ctx.dataIndex]})`
+                }
+              }
+            },
+            scales: { y: { beginAtZero: true, max: 100 } }
+          }
+        });
+      } else {
+        scoreChart.data = scoreData;
+        scoreChart.update();
+      }
+
+      const rLabels = ["< -1R", "-1R to 0", "0 to 1R", "1R to 2R", "> 2R"];
+      const rCounts = [0, 0, 0, 0, 0];
+
+      trades.forEach(t => {
+        if (t.rrAchieved == null || isNaN(t.rrAchieved)) return;
+        const r = Number(t.rrAchieved);
+        if (r < -1) rCounts[0]++;
+        else if (r < 0) rCounts[1]++;
+        else if (r < 1) rCounts[2]++;
+        else if (r < 2) rCounts[3]++;
+        else rCounts[4]++;
+      });
+
+      const rData = {
+        labels: rLabels,
+        datasets: [{ label: "Count", data: rCounts }]
+      };
+
+      if (!rDistChart) {
+        rDistChart = new Chart(rDistChartCtx, {
+          type: "bar",
+          data: rData,
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+          }
+        });
+      } else {
+        rDistChart.data = rData;
+        rDistChart.update();
+      }
+
+      if (!trades.length) {
+        insightsContentEl.textContent = "Not enough data yet. Log more trades.";
+        return;
+      }
+
+      const comboMap = new Map();
+      trades.forEach(t => {
+        const key = `${t.session || "?"} | ${t.zoneType || "?"} | ${t.entryType || "?"}`;
+        if (!comboMap.has(key)) {
+          comboMap.set(key, {
+            key,
+            count: 0,
+            wins: 0,
+            losses: 0,
+            sumR: 0,
+            rCount: 0
+          });
+        }
+        const g = comboMap.get(key);
+        g.count++;
+        if (t.result === "win") g.wins++;
+        else if (t.result === "loss") g.losses++;
+        if (t.rrAchieved != null && !isNaN(t.rrAchieved)) {
+          g.sumR += Number(t.rrAchieved);
+          g.rCount++;
+        }
+      });
+
+      const combos = Array.from(comboMap.values()).filter(g => g.count >= 3);
+      combos.forEach(g => {
+        const denom = g.wins + g.losses;
+        g.winrate = denom ? (g.wins / denom) * 100 : 0;
+        g.avgR = g.rCount ? (g.sumR / g.rCount) : 0;
+      });
+
+      combos.sort((a, b) => b.avgR - a.avgR);
+      const best = combos[0];
+      const worst = combos[combos.length - 1];
+
+      const tfMap = new Map();
+      trades.forEach(t => {
+        const tf = t.entryTf || "unknown";
+        if (!tfMap.has(tf)) {
+          tfMap.set(tf, { tf, count: 0, sumR: 0, rCount: 0 });
+        }
+        const g = tfMap.get(tf);
+        g.count++;
+        if (t.rrAchieved != null && !isNaN(t.rrAchieved)) {
+          g.sumR += Number(t.rrAchieved);
+          g.rCount++;
+        }
+      });
+
+      const tfStats = Array.from(tfMap.values()).filter(g => g.count >= 3);
+      tfStats.forEach(g => {
+        g.avgR = g.rCount ? (g.sumR / g.rCount) : 0;
+      });
+      tfStats.sort((a, b) => b.avgR - a.avgR);
+      const bestTf = tfStats[0];
+      const worstTf = tfStats[tfStats.length - 1];
+
+      let html = "";
+
+      if (best) {
+        html += `<div><strong>Best combo</strong>: ${best.key} &mdash; avg R ≈ ${best.avgR.toFixed(2)} (n=${best.count}, WR≈${best.winrate.toFixed(1)}%).</div>`;
+      }
+      if (worst && worst !== best) {
+        html += `<div><strong>Worst combo</strong>: ${worst.key} &mdash; avg R ≈ ${worst.avgR.toFixed(2)} (n=${worst.count}, WR≈${worst.winrate.toFixed(1)}%).</div>`;
+      }
+
+      if (bestTf) {
+        html += `<div style="margin-top:4px;"><strong>Best entry TF</strong>: ${bestTf.tf} &mdash; avg R ≈ ${bestTf.avgR.toFixed(2)} (n=${bestTf.count}).</div>`;
+      }
+      if (worstTf && worstTf !== bestTf) {
+        html += `<div><strong>Worst entry TF</strong>: ${worstTf.tf} &mdash; avg R ≈ ${worstTf.avgR.toFixed(2)} (n=${worstTf.count}).</div>`;
+      }
+
+      if (!html) {
+        html = "Need more samples in each combo (min 3 trades) before I start bullying your patterns.";
+      }
+
+      insightsContentEl.innerHTML = html;
+    }
+
     async function renderJournal() {
       let trades;
       if (currentUser) {
@@ -1327,15 +1815,35 @@
       lastLoadedTrades = trades;
       const filtered = applyFilters(trades);
       renderJournalTable(filtered);
+      updateChartsAndInsights(filtered);
     }
 
     async function saveCurrentTrade() {
+      const todayKey = getTodayKey();
+      if (!currentDailyContext || currentDailyContext.date !== todayKey) {
+        ensureTodayContext();
+      }
+
+      if (!hasAnyDailyContext(currentDailyContext)) {
+        alert("Set today's market context before saving trades.");
+        return;
+      }
+
       const trade = JSON.parse(JSON.stringify(currentTrade));
       trade.marketType = "crypto";
       trade.createdAt = new Date().toISOString();
       trade.result = null;
       trade.rrAchieved = null;
       trade.setupScore = calculateSetupScore(trade);
+
+      trade.contextDate          = todayKey;
+      trade.ctx_btcHTFTrend      = currentDailyContext.btcHTFTrend || null;
+      trade.ctx_btcLTFState      = currentDailyContext.btcLTFState || null;
+      trade.ctx_regime           = currentDailyContext.regime || null;
+      trade.ctx_fearGreedBucket  = currentDailyContext.fearGreedBucket || null;
+      trade.ctx_volatility       = currentDailyContext.volatility || null;
+      trade.ctx_btcDominanceTrend= currentDailyContext.btcDominanceTrend || null;
+      trade.ctx_newsImpact       = currentDailyContext.newsImpact || null;
 
       if (currentUser) {
         await saveTradeFirestore(trade);
@@ -1400,19 +1908,18 @@
           renderJournal();
         }
       } else {
-        alert("Clear All is only for local mode. For Firestore, delete trades manually later (we can add bulk delete in a later version).");
+        alert("Clear All is only for local mode. For Firestore, delete trades manually later.");
       }
     };
 
-    // Filters events
     [filterSessionEl, filterZoneEl, filterEntryEl, filterResultEl].forEach(sel => {
       sel.addEventListener("change", () => {
         const filtered = applyFilters(lastLoadedTrades);
         renderJournalTable(filtered);
+        updateChartsAndInsights(filtered);
       });
     });
 
-    // ===== Auth logic =====
     function updateAuthUI() {
       if (currentUser) {
         authStatusEl.textContent = "Logged in as " + (currentUser.email || currentUser.uid);
@@ -1474,9 +1981,13 @@
       await renderJournal();
     });
 
-    // init
+    // Init: daily context + wizard + journal
+    loadDailyContextLocal();
+    ensureTodayContext();
+    updateDailyContextUI();
+
     restartWizard();
     renderJournal();
   </script>
 </body>
-</html></html></html>
+</html>
