@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SMC Crypto Trading OS (v1)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --bg: #020617;
+      --card-bg: #020617;
+      --accent: #4f46e5;
+      --accent-soft: rgba(79, 70, 229, 0.16);
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 40%, #020617 100%);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 1100px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.3fr);
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .app { grid-template-columns: minmax(0,1fr); }
+    }
+
+    .card {
+      background: linear-gradient(145deg, #020617 0%, #020617 50%, #020617 100%);
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      padding: 20px 20px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, rgba(79, 70, 229, 0.18), transparent 60%);
+      pointer-events: none;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #e5e7eb;
+    }
+
+    .card-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      white-space: nowrap;
+    }
+
+    .prompt {
+      position: relative;
+      z-index: 1;
+      margin-bottom: 16px;
+      padding: 14px 14px 12px;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    .prompt-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .prompt-text {
+      font-size: 0.98rem;
+      line-height: 1.5;
+    }
+
+    .note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .options {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 0.85rem;
+      border: 1px solid transparent;
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.14s ease-out;
+    }
+    .btn-primary {
+      background: radial-gradient(circle at top left, #4f46e5, #4338ca);
+      border-color: rgba(129, 140, 248, 0.9);
+      box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.2);
+    }
+    .btn-outline {
+      border-color: rgba(148, 163, 184, 0.6);
+    }
+    .btn-ghost {
+      border-color: transparent;
+      background: transparent;
+      color: var(--text-muted);
+      padding-inline: 0;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.7);
+      opacity: 0.97;
+    }
+    .btn:active {
+      transform: translateY(0);
+      box-shadow: none;
+      opacity: 0.9;
+    }
+
+    .status-line {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .flow {
+      position: relative;
+      z-index: 1;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(148, 163, 184, 0.4);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .summary {
+      position: relative;
+      z-index: 1;
+      margin-top: 10px;
+      padding: 10px 12px 8px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px dashed rgba(148, 163, 184, 0.5);
+      font-size: 0.8rem;
+    }
+
+    .summary-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .summary-item {
+      margin-bottom: 2px;
+    }
+
+    /* Journal */
+
+    .journal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    th, td {
+      padding: 6px 6px;
+      text-align: left;
+      border-bottom: 1px solid rgba(30, 41, 59, 0.85);
+    }
+
+    th {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    tbody tr:hover {
+      background-color: rgba(15, 23, 42, 0.8);
+    }
+
+    .pill {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .pill-win { background: rgba(34,197,94,0.16); color: #bbf7d0; }
+    .pill-loss { background: rgba(239,68,68,0.16); color: #fecaca; }
+    .pill-be { background: rgba(148,163,184,0.16); color: #e5e7eb; }
+
+    .empty-state {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      padding-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- LEFT: WIZARD -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Crypto SMC Wizard</div>
+          <div class="card-subtitle" id="node-type-label">Phase: –</div>
+        </div>
+        <div class="badge" id="bias-label">Bias: –</div>
+      </div>
+
+      <div class="prompt">
+        <div class="prompt-label">Current Step</div>
+        <div class="prompt-text" id="node-text">Loading…</div>
+        <div class="note" id="node-note"></div>
+      </div>
+
+      <div class="options" id="options-container"></div>
+
+      <div class="status-line">
+        <span id="status-line-text">Follow the steps. No skipping.</span>
+        <div>
+          <button class="btn btn-ghost" id="back-btn" type="button">⟵ Back</button>
+          <button class="btn btn-ghost" id="restart-btn" type="button">⟳ Restart</button>
+        </div>
+      </div>
+
+      <div class="flow">
+        <strong>Flow:</strong> Context → HTF Bias → Zone → Entry → Risk → Save trade  
+        This version is crypto-only (BTC/ETH/alts), later we can plug Forex/Stocks.
+      </div>
+
+      <div class="summary" id="summary-panel">
+        <div class="summary-title">Current Trade Plan (Draft)</div>
+        <div class="summary-item" id="summary-pair">Pair: –</div>
+        <div class="summary-item" id="summary-session">Session: –</div>
+        <div class="summary-item" id="summary-bias">HTF Bias: –</div>
+        <div class="summary-item" id="summary-displacement">Displacement: –</div>
+        <div class="summary-item" id="summary-zone">Zone Type: –</div>
+        <div class="summary-item" id="summary-entry">Entry Type: –</div>
+        <div class="summary-item" id="summary-sl">SL Method: –</div>
+        <div class="summary-item" id="summary-tp">TP Method: –</div>
+      </div>
+
+      <div class="options" id="save-container" style="margin-top: 10px;"></div>
+    </div>
+
+    <!-- RIGHT: JOURNAL -->
+    <div class="card">
+      <div class="journal-header">
+        <div>
+          <div class="card-title">Journal (Local)</div>
+          <div class="card-subtitle">Saved on this device using localStorage.</div>
+        </div>
+        <button class="btn btn-outline" id="clear-btn" type="button">Clear All</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Pair</th>
+            <th>Bias</th>
+            <th>Zone</th>
+            <th>Entry</th>
+            <th>Result</th>
+            <th>R</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="journal-body"></tbody>
+      </table>
+      <div class="empty-state" id="journal-empty">No trades yet. Finish a wizard run and save.</div>
+    </div>
+  </div>
+
+  <script>
+    // ========== WIZARD LOGIC (CRYPTO ONLY v1) ==========
+
+    // Each node can optionally set a field on the currentTrade object via node.field
+    // Each option can specify: label, value, next, branchLabel
+
+    var nodes = {
+      start: {
+        id: "start",
+        type: "context",
+        text: "What pair are you planning to trade?",
+        note: "You can add more pairs later. For now, pick the closest match.",
+        field: "pair",
+        options: [
+          { label: "BTCUSDT", value: "BTCUSDT", next: "session", branchLabel: "Pair: BTCUSDT" },
+          { label: "ETHUSDT", value: "ETHUSDT", next: "session", branchLabel: "Pair: ETHUSDT" },
+          { label: "Altcoin / Other", value: "ALT", next: "session", branchLabel: "Pair: ALT/OTHER" }
+        ]
+      },
+
+      session: {
+        id: "session",
+        type: "context",
+        text: "What session are you mainly trading this setup in?",
+        note: "This will matter later when you analyze performance by session.",
+        field: "session",
+        options: [
+          { label: "London", value: "London", next: "htfSweep", branchLabel: "Session: London" },
+          { label: "New York", value: "New York", next: "htfSweep", branchLabel: "Session: New York" },
+          { label: "Asia", value: "Asia", next: "htfSweep", branchLabel: "Session: Asia" },
+          { label: "Weekend / Random", value: "Off-hours", next: "htfSweep", branchLabel: "Session: Off-hours" }
+        ]
+      },
+
+      htfSweep: {
+        id: "htfSweep",
+        type: "htf",
+        text: "On HTF (1H/4H), did price sweep a clear liquidity pool (equal highs/lows, previous swing)?",
+        note: "No HTF sweep usually means you are early. Let the market take liquidity first.",
+        field: "htfSweep",
+        options: [
+          { label: "Yes, clear sweep", value: "yes", next: "displacementType", branchLabel: "HTF Sweep: YES" },
+          { label: "No, nothing obvious", value: "no", next: "infoNoSweep", branchLabel: "HTF Sweep: NO" }
+        ]
+      },
+
+      infoNoSweep: {
+        id: "infoNoSweep",
+        type: "info",
+        text: "You have no clear HTF liquidity sweep.",
+        note: "This is usually where traders become liquidity. Better to wait than force a setup.",
+        options: [
+          { label: "Restart & wait for sweep", next: "start", branchLabel: "Restart after no sweep" }
+        ]
+      },
+
+      displacementType: {
+        id: "displacementType",
+        type: "htf",
+        text: "How did price move after the sweep?",
+        note: "Impulse: 1–3 big body candles with strong FVG.\nStaircase: multiple pushes with shallow pullbacks.\nGrindy: overlapping candles, messy.",
+        field: "displacementType",
+        options: [
+          { label: "Impulse leg", value: "impulse", next: "bosDirection", branchLabel: "Displacement: Impulse" },
+          { label: "Steplike pump / dump", value: "staircase", next: "bosDirection", branchLabel: "Displacement: Staircase" },
+          { label: "Grindy / overlapping", value: "grindy", next: "infoWeakMove", branchLabel: "Displacement: Grindy/Weak" }
+        ]
+      },
+
+      infoWeakMove: {
+        id: "infoWeakMove",
+        type: "info",
+        text: "Grindy move after a sweep = low-quality context.",
+        note: "If displacement is weak, the zone often fails or chops. Best not to force a trade here.",
+        options: [
+          { label: "Restart and wait for cleaner move", next: "start", branchLabel: "Restart after weak move" }
+        ]
+      },
+
+      bosDirection: {
+        id: "bosDirection",
+        type: "htf",
+        text: "Did price break structure (BOS) in the direction of that move?",
+        note: "Bullish BOS → you look for demand in discount.\nBearish BOS → you look for supply in premium.",
+        field: "htfBias",
+        options: [
+          { label: "Bullish BOS (highs taken)", value: "bullish", next: "areaBull", branchLabel: "BOS: Bullish" },
+          { label: "Bearish BOS (lows taken)", value: "bearish", next: "areaBear", branchLabel: "BOS: Bearish" },
+          { label: "No clean BOS", value: "none", next: "infoNoBos", branchLabel: "BOS: None" }
+        ]
+      },
+
+      infoNoBos: {
+        id: "infoNoBos",
+        type: "info",
+        text: "No clean BOS = unclear HTF trend.",
+        note: "Without trend direction, your SMC zones become random. Skip this setup.",
+        options: [
+          { label: "Restart & wait for clear BOS", next: "start", branchLabel: "Restart after no BOS" }
+        ]
+      },
+
+      areaBull: {
+        id: "areaBull",
+        type: "htf",
+        text: "For this bullish BOS, is price now in discount (lower part of the swing)?",
+        note: "Demand only makes sense in discount. If you are trying to long in premium, that’s chasing.",
+        field: "htfArea",
+        options: [
+          { label: "Yes, in discount", value: "discount", next: "zoneType", branchLabel: "Area: Bullish + Discount" },
+          { label: "No, mid / premium", value: "wrong", next: "infoWrongArea", branchLabel: "Area: Bullish but wrong" }
+        ]
+      },
+
+      areaBear: {
+        id: "areaBear",
+        type: "htf",
+        text: "For this bearish BOS, is price now in premium (upper part of the swing)?",
+        note: "Supply only makes sense in premium. Shorting discount is risky.",
+        field: "htfArea",
+        options: [
+          { label: "Yes, in premium", value: "premium", next: "zoneType", branchLabel: "Area: Bearish + Premium" },
+          { label: "No, mid / discount", value: "wrong", next: "infoWrongArea", branchLabel: "Area: Bearish but wrong" }
+        ]
+      },
+
+      infoWrongArea: {
+        id: "infoWrongArea",
+        type: "info",
+        text: "You have bias, but price is in the wrong part of the swing.",
+        note: "Trading mid-range is gambling. You either wait for price to move to discount/premium or skip.",
+        options: [
+          { label: "Restart & wait for correct area", next: "start", branchLabel: "Restart from wrong area" }
+        ]
+      },
+
+      zoneType: {
+        id: "zoneType",
+        type: "zone",
+        text: "What zone are you trying to trade?",
+        note: "Reversal at HTF extreme → confirmation entry.\nContinuation mid-trend → limit is acceptable.",
+        field: "zoneType",
+        options: [
+          { label: "Reversal zone (HTF extreme)", value: "reversal", next: "entryType", branchLabel: "Zone: Reversal" },
+          { label: "Continuation zone (trend continuation)", value: "continuation", next: "entryType", branchLabel: "Zone: Continuation" }
+        ]
+      },
+
+      entryType: {
+        id: "entryType",
+        type: "entry",
+        text: "How do you intend to enter this trade?",
+        note: "Reversal + crypto = safer to use LTF confirmation. Strong continuation in obvious trend = limit can work.",
+        field: "entryType",
+        options: [
+          { label: "Confirmation (LTF sweep + CHOCH + OB)", value: "confirmation", next: "slMethod", branchLabel: "Entry: Confirmation" },
+          { label: "Limit at zone (no confirmation)", value: "limit", next: "slMethod", branchLabel: "Entry: Limit" }
+        ]
+      },
+
+      slMethod: {
+        id: "slMethod",
+        type: "risk",
+        text: "How are you placing your stop loss?",
+        note: "Best: beyond the liquidity that got swept. Worst: inside the wick that got hunted.",
+        field: "slMethod",
+        options: [
+          { label: "Beyond swept liquidity", value: "beyond_sweep", next: "tpMethod", branchLabel: "SL: Beyond sweep" },
+          { label: "Just under/over OB", value: "under_ob", next: "infoTightSl", branchLabel: "SL: Under/over OB only" }
+        ]
+      },
+
+      infoTightSl: {
+        id: "infoTightSl",
+        type: "info",
+        text: "You are putting SL just under/over the OB.",
+        note: "This often gets wicked. In SMC, the safer stop is beyond the liquidity that was actually taken.",
+        options: [
+          { label: "I’ll move SL beyond liquidity", next: "slMethodAdjusted", branchLabel: "Adjust SL" },
+          { label: "I insist on tight SL", next: "tpMethod", branchLabel: "Accept tight SL risk" }
+        ]
+      },
+
+      slMethodAdjusted: {
+        id: "slMethodAdjusted",
+        type: "risk",
+        text: "SL will be moved beyond the swept liquidity.",
+        note: "RR might be smaller, but survivability is higher.",
+        field: "slMethod",
+        options: [
+          { label: "Confirm SL beyond liquidity", value: "beyond_sweep", next: "tpMethod", branchLabel: "SL: Adjusted beyond sweep" }
+        ]
+      },
+
+      tpMethod: {
+        id: "tpMethod",
+        type: "risk",
+        text: "How are you planning to take profit?",
+        note: "Structure-based exits beat emotional exits.",
+        field: "tpMethod",
+        options: [
+          { label: "TP1 FVG fill, TP2 next liquidity", value: "fvg_liquidity", next: "endReady", branchLabel: "TP: FVG + Liquidity" },
+          { label: "Single TP at major liquidity", value: "single_liquidity", next: "endReady", branchLabel: "TP: Single liquidity" },
+          { label: "No clear plan yet", value: "no_plan", next: "infoNoTpPlan", branchLabel: "TP: No plan" }
+        ]
+      },
+
+      infoNoTpPlan: {
+        id: "infoNoTpPlan",
+        type: "info",
+        text: "You don’t have a clear TP plan.",
+        note: "You’re about to trade without an exit idea. Either define a plan now or don’t take this trade.",
+        options: [
+          { label: "Fine, I’ll plan TP as FVG + liquidity", next: "tpMethodForced", branchLabel: "Force TP plan" },
+          { label: "I accept that this is low quality", next: "endReady", branchLabel: "Proceed without strong TP plan" }
+        ]
+      },
+
+      tpMethodForced: {
+        id: "tpMethodForced",
+        type: "risk",
+        text: "TP1 at nearest FVG fill, TP2 at next clear liquidity pool.",
+        note: "This is the default smart plan: partial out at rebalancing, then at main target.",
+        field: "tpMethod",
+        options: [
+          { label: "Confirm this TP plan", value: "fvg_liquidity", next: "endReady", branchLabel: "TP: Forced FVG + Liquidity" }
+        ]
+      },
+
+      endReady: {
+        id: "endReady",
+        type: "end",
+        text: "This setup is now defined. You can store it in your journal and execute according to this plan.",
+        note: "You still have to obey it in real time. But the logic is now structured instead of emotional.",
+        options: [
+          { label: "Review summary & Save trade", next: "saveStep", branchLabel: "Go to Save" }
+        ]
+      },
+
+      saveStep: {
+        id: "saveStep",
+        type: "end",
+        text: "If you’re satisfied with this plan, click “Save Trade to Journal”.",
+        note: "Later we’ll add scoring and analytics. For now, you’re just building data.",
+        options: [
+          { label: "Back to previous step", next: "endReady", branchLabel: "Back before save" }
+        ]
+      }
+    };
+
+    // ========== STATE ==========
+
+    var currentNodeId = "start";
+    var path = []; // history of decisions
+    var currentTrade = {};
+
+    var nodeTypeLabelEl = document.getElementById("node-type-label");
+    var biasLabelEl = document.getElementById("bias-label");
+    var nodeTextEl = document.getElementById("node-text");
+    var nodeNoteEl = document.getElementById("node-note");
+    var optionsContainerEl = document.getElementById("options-container");
+    var saveContainerEl = document.getElementById("save-container");
+    var statusLineTextEl = document.getElementById("status-line-text");
+    var backBtnEl = document.getElementById("back-btn");
+    var restartBtnEl = document.getElementById("restart-btn");
+
+    // summary fields
+    var summaryPairEl = document.getElementById("summary-pair");
+    var summarySessionEl = document.getElementById("summary-session");
+    var summaryBiasEl = document.getElementById("summary-bias");
+    var summaryDisplacementEl = document.getElementById("summary-displacement");
+    var summaryZoneEl = document.getElementById("summary-zone");
+    var summaryEntryEl = document.getElementById("summary-entry");
+    var summarySlEl = document.getElementById("summary-sl");
+    var summaryTpEl = document.getElementById("summary-tp");
+
+    // journal elements
+    var journalBodyEl = document.getElementById("journal-body");
+    var journalEmptyEl = document.getElementById("journal-empty");
+    var clearBtnEl = document.getElementById("clear-btn");
+
+    function humanReadableType(type) {
+      if (type === "context") return "Phase 0: Context";
+      if (type === "htf") return "Phase 1: HTF Bias";
+      if (type === "zone") return "Phase 2: Zone Selection";
+      if (type === "entry") return "Phase 3: Entry Model";
+      if (type === "risk") return "Phase 4: Risk & TP";
+      if (type === "end") return "Phase 5: Finalization";
+      return "Info / Reminder";
+    }
+
+    function updateBiasLabel() {
+      var bias = currentTrade.htfBias;
+      if (!bias) {
+        biasLabelEl.textContent = "Bias: –";
+        biasLabelEl.style.borderColor = "rgba(148,163,184,0.6)";
+      } else if (bias === "bullish") {
+        biasLabelEl.textContent = "Bias: Bullish";
+        biasLabelEl.style.borderColor = "rgba(34,197,94,0.9)";
+      } else if (bias === "bearish") {
+        biasLabelEl.textContent = "Bias: Bearish";
+        biasLabelEl.style.borderColor = "rgba(239,68,68,0.9)";
+      } else {
+        biasLabelEl.textContent = "Bias: " + bias;
+      }
+    }
+
+    function updateSummary() {
+      summaryPairEl.textContent = "Pair: " + (currentTrade.pair || "–");
+      summarySessionEl.textContent = "Session: " + (currentTrade.session || "–");
+      summaryBiasEl.textContent = "HTF Bias: " + (currentTrade.htfBias || "–");
+      summaryDisplacementEl.textContent = "Displacement: " + (currentTrade.displacementType || "–");
+      summaryZoneEl.textContent = "Zone Type: " + (currentTrade.zoneType || "–");
+      summaryEntryEl.textContent = "Entry Type: " + (currentTrade.entryType || "–");
+      summarySlEl.textContent = "SL Method: " + (currentTrade.slMethod || "–");
+      summaryTpEl.textContent = "TP Method: " + (currentTrade.tpMethod || "–");
+    }
+
+    function renderCurrentNode() {
+      var node = nodes[currentNodeId];
+      if (!node) return;
+
+      nodeTextEl.textContent = node.text;
+      nodeNoteEl.textContent = node.note || "";
+      nodeTypeLabelEl.textContent = humanReadableType(node.type);
+      updateBiasLabel();
+      updateSummary();
+
+      // status line
+      if (node.type === "context") {
+        statusLineTextEl.textContent = "Context: define pair and session first.";
+      } else if (node.type === "htf") {
+        statusLineTextEl.textContent = "HTF phase: structure + displacement. No LTF noise yet.";
+      } else if (node.type === "zone") {
+        statusLineTextEl.textContent = "Zone phase: Reversal vs Continuation.";
+      } else if (node.type === "entry") {
+        statusLineTextEl.textContent = "Entry phase: confirmation vs limit.";
+      } else if (node.type === "risk") {
+        statusLineTextEl.textContent = "Risk phase: SL and TP rules.";
+      } else if (node.type === "end") {
+        statusLineTextEl.textContent = "Finalize and save or adjust.";
+      } else {
+        statusLineTextEl.textContent = "Info step. Read it fully.";
+      }
+
+      // render options
+      optionsContainerEl.innerHTML = "";
+      var i, opt, btn;
+      for (i = 0; i < node.options.length; i++) {
+        (function(i) {
+          opt = node.options[i];
+          btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "btn " + (i === 0 ? "btn-primary" : "btn-outline");
+          btn.textContent = opt.label;
+          btn.onclick = function () { handleOptionClick(node, opt); };
+          optionsContainerEl.appendChild(btn);
+        })(i);
+      }
+
+      // Save button only when at saveStep
+      saveContainerEl.innerHTML = "";
+      if (node.id === "saveStep") {
+        var saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.className = "btn btn-primary";
+        saveBtn.textContent = "💾 Save Trade to Journal";
+        saveBtn.onclick = saveCurrentTrade;
+        saveContainerEl.appendChild(saveBtn);
+      }
+
+      backBtnEl.disabled = path.length === 0;
+      backBtnEl.style.opacity = backBtnEl.disabled ? 0.4 : 1;
+    }
+
+    function handleOptionClick(node, option) {
+      // Save path step
+      path.push({
+        nodeId: node.id,
+        text: node.text,
+        branchLabel: option.branchLabel || option.label
+      });
+
+      // If node sets a field, store it
+      if (node.field) {
+        currentTrade[node.field] = option.value || option.label;
+      }
+
+      // special: update bias if field is htfBias
+      if (node.field === "htfBias") {
+        currentTrade.htfBias = option.value;
+      }
+
+      // move to next node
+      currentNodeId = option.next;
+      renderCurrentNode();
+    }
+
+    function goBack() {
+      if (path.length === 0) return;
+
+      path.pop(); // remove last
+      // reset trade and recompute from start
+      currentTrade = {};
+      currentNodeId = "start";
+
+      for (var i = 0; i < path.length; i++) {
+        var step = path[i];
+        var node = nodes[currentNodeId];
+        if (!node) break;
+
+        // find option that matches this branchLabel
+        var chosenOption = null;
+        for (var j = 0; j < node.options.length; j++) {
+          var opt = node.options[j];
+          if (opt.branchLabel === step.branchLabel) {
+            chosenOption = opt;
+            break;
+          }
+        }
+        if (!chosenOption) break;
+
+        // apply field if any
+        if (node.field) {
+          currentTrade[node.field] = chosenOption.value || chosenOption.label;
+        }
+        if (node.field === "htfBias") {
+          currentTrade.htfBias = chosenOption.value;
+        }
+
+        currentNodeId = chosenOption.next;
+      }
+
+      renderCurrentNode();
+    }
+
+    function restartWizard() {
+      path = [];
+      currentTrade = {
+        marketType: "crypto"
+      };
+      currentNodeId = "start";
+      renderCurrentNode();
+    }
+
+    backBtnEl.onclick = goBack;
+    restartBtnEl.onclick = restartWizard;
+
+    // ========== JOURNAL (localStorage) ==========
+
+    function loadTrades() {
+      try {
+        var raw = localStorage.getItem("trades");
+        if (!raw) return [];
+        return JSON.parse(raw) || [];
+      } catch (e) {
+        console.error("Error loading trades", e);
+        return [];
+      }
+    }
+
+    function saveTrades(allTrades) {
+      try {
+        localStorage.setItem("trades", JSON.stringify(allTrades));
+      } catch (e) {
+        console.error("Error saving trades", e);
+      }
+    }
+
+    function renderJournal() {
+      var trades = loadTrades();
+      journalBodyEl.innerHTML = "";
+
+      if (!trades.length) {
+        journalEmptyEl.style.display = "block";
+        return;
+      }
+      journalEmptyEl.style.display = "none";
+
+      for (var i = 0; i < trades.length; i++) {
+        (function(index) {
+          var t = trades[index];
+          var tr = document.createElement("tr");
+
+          var dateTd = document.createElement("td");
+          dateTd.textContent = t.createdAt ? t.createdAt.split("T")[0] : "-";
+          tr.appendChild(dateTd);
+
+          var pairTd = document.createElement("td");
+          pairTd.textContent = t.pair || "-";
+          tr.appendChild(pairTd);
+
+          var biasTd = document.createElement("td");
+          biasTd.textContent = t.htfBias || "-";
+          tr.appendChild(biasTd);
+
+          var zoneTd = document.createElement("td");
+          zoneTd.textContent = t.zoneType || "-";
+          tr.appendChild(zoneTd);
+
+          var entryTd = document.createElement("td");
+          entryTd.textContent = t.entryType || "-";
+          tr.appendChild(entryTd);
+
+          var resultTd = document.createElement("td");
+          var pill = document.createElement("span");
+          var r = t.result || "";
+          if (r === "win") {
+            pill.className = "pill pill-win";
+            pill.textContent = "WIN";
+          } else if (r === "loss") {
+            pill.className = "pill pill-loss";
+            pill.textContent = "LOSS";
+          } else if (r === "be") {
+            pill.className = "pill pill-be";
+            pill.textContent = "B/E";
+          } else {
+            pill.textContent = "-";
+          }
+          resultTd.appendChild(pill);
+          tr.appendChild(resultTd);
+
+          var rrTd = document.createElement("td");
+          rrTd.textContent = t.rrAchieved != null ? t.rrAchieved : "-";
+          tr.appendChild(rrTd);
+
+          var actionsTd = document.createElement("td");
+          var editBtn = document.createElement("button");
+          editBtn.type = "button";
+          editBtn.className = "btn btn-ghost";
+          editBtn.textContent = "Edit";
+          editBtn.onclick = function () {
+            editTrade(index);
+          };
+          actionsTd.appendChild(editBtn);
+          tr.appendChild(actionsTd);
+
+          journalBodyEl.appendChild(tr);
+        })(i);
+      }
+    }
+
+    function saveCurrentTrade() {
+      var trade = JSON.parse(JSON.stringify(currentTrade));
+      trade.marketType = "crypto";
+      trade.createdAt = new Date().toISOString();
+      // initial result fields
+      trade.result = null;
+      trade.rrAchieved = null;
+
+      var allTrades = loadTrades();
+      allTrades.push(trade);
+      saveTrades(allTrades);
+      renderJournal();
+      alert("Trade saved to local journal.");
+      restartWizard();
+    }
+
+    function editTrade(index) {
+      var allTrades = loadTrades();
+      if (index < 0 || index >= allTrades.length) return;
+      var t = allTrades[index];
+
+      var result = prompt("Result? (win/loss/be)", t.result || "");
+      if (result !== null) {
+        result = result.toLowerCase().trim();
+        if (result !== "win" && result !== "loss" && result !== "be" && result !== "") {
+          alert("Invalid result. Use win, loss, or be.");
+          return;
+        }
+        t.result = result || null;
+      }
+
+      var rrStr = prompt("R multiple achieved? (e.g. 1.5, -0.5)", t.rrAchieved != null ? t.rrAchieved : "");
+      if (rrStr !== null && rrStr.trim() !== "") {
+        var rr = parseFloat(rrStr);
+        if (!isNaN(rr)) {
+          t.rrAchieved = rr;
+        }
+      }
+
+      allTrades[index] = t;
+      saveTrades(allTrades);
+      renderJournal();
+    }
+
+    clearBtnEl.onclick = function () {
+      if (confirm("Clear ALL saved trades from this device?")) {
+        localStorage.removeItem("trades");
+        renderJournal();
+      }
+    };
+
+    // init
+    restartWizard();
+    renderJournal();
+  </script>
+</body>
+</html>
